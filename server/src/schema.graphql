@@ -69,9 +69,42 @@ type SuccessPayload {
   query: Query!
 }
 
+type Transaction {
+  id: ID!
+  date: String!
+  kind: TransactionKind!
+  buyAmount: Float
+  buyCurrency: String
+  sellAmount: Float
+  sellCurrency: String
+  feeAmount: Float
+  feeCurrency: String
+}
+
+type TaxableEvent {
+  transaction: Transaction!
+  costBasis: Float
+  gainOrLoss: Float
+  taxCurrency: String
+}
+
+enum TransactionKind {
+  TRADE
+  DEPOSIT
+  WITHDRAWAL
+  SPEND
+  AIRDROP
+  BORROW
+  REPAY
+  INCOME
+  LOST
+}
+
 type Query {
   hello: String!
   user(id: ID!): User!
+  transactions: [Transaction!]!
+  taxableEvents: [TaxableEvent!]!
 }
 
 type Mutation {

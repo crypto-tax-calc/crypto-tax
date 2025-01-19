@@ -1,10 +1,10 @@
-import * as UserDao from '../daos/users.dao'
+import * as UserDao from '../../daos/users.dao'
 import { type AuthenticationToken, type RefreshAccessTokenInput, type RegisterUserInput, type ResetPasswordInput, type UpdatePasswordInput, type User } from '@fstmswa/types'
-import * as AuthenticationUtils from '../utils/authentication.utils'
-import * as StringUtils from '../utils/string.utils'
-import * as EmailService from '../services/email.service'
+import * as AuthenticationUtils from '../../utils/authentication.utils'
+import * as StringUtils from '../../utils/string.utils'
+import * as EmailService from '../integrations/email.integration.service'
 import { type User as DbUser } from '@prisma/client'
-import { logger } from '../config/logger'
+import { logger } from '../../config/logger'
 
 const generateResetPasswordHtml = (id: string, token: string): string => {
   if (!process.env.APP_URL) {
@@ -44,7 +44,7 @@ export const fetchAll = async (): Promise<DbUser[]> => {
 
 export const fetchOne = async ({ id, email }: { id?: string; email?: string }): Promise<DbUser | null> => {
   const result = await UserDao.fetchOne({ id, email }).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke hente bruker.')
   })
 
@@ -60,13 +60,13 @@ export const register = async (input: RegisterUserInput): Promise<Authentication
 
   const { password, ...restUser } = input
   const hashedPassword = await AuthenticationUtils.hashString(input.password).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke opprette passord.')
   })
 
   const userToCreate = { ...restUser, hash: hashedPassword }
   const createdUser = await UserDao.create(userToCreate).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke opprette bruker.')
   })
 
@@ -76,12 +76,12 @@ export const register = async (input: RegisterUserInput): Promise<Authentication
 
 export const refreshAccessToken = async (input: RefreshAccessTokenInput): Promise<AuthenticationToken> => {
   const verifiedToken = await AuthenticationUtils.verifyAndDecodeRefreshToken(input.refreshToken).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke oppdatere token.')
   })
 
   await fetchOne({ id: verifiedToken.id }).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Finner ikke bruker')
   })
 
@@ -92,7 +92,7 @@ export const refreshAccessToken = async (input: RefreshAccessTokenInput): Promis
 
 export const resetPassword = async (input: ResetPasswordInput): Promise<boolean> => {
   const existingUser = await fetchOne({ email: input.email }).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke hente bruker.')
   })
 
@@ -104,14 +104,14 @@ export const resetPassword = async (input: ResetPasswordInput): Promise<boolean>
   const resetPasswordToken = await AuthenticationUtils.hashString(randomResetPasswordString)
 
   await update(existingUser.id, { resetPasswordToken }).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke oppdatere bruker.')
   })
 
   const emailHtml = generateResetPasswordHtml(existingUser.id, resetPasswordToken)
 
   const email = await EmailService.sendMail({ to: existingUser.email, subject: 'Tilbakestill passord i Company Inc.', html: emailHtml }).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new Error('Kunne ikke sende email.')
   })
 

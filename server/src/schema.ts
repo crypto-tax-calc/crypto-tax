@@ -1,13 +1,15 @@
 import { makeExecutableSchema } from '@graphql-tools/schema'
-import * as UsersService from './services/users.service'
+import * as UsersService from './services/db/users.db.service'
 import { readFileSync } from 'fs'
 import { type Resolvers } from './types/graphqlTypes'
 import { type User as DbUser } from '@prisma/client'
 import path from 'path'
-import { type Query, type User } from '@fstmswa/types'
+import { type Query, type User, type Transaction } from '@fstmswa/types'
 import { GraphQLError } from 'graphql/error'
 import { applyMiddleware } from 'graphql-middleware'
 import { permissions } from './permissions'
+import * as TransactionDbService from './services/db/transactions.db.service'
+import * as TaxableEventsDbService from './services/db/taxableEvents.db.service'
 
 const typeDefs = readFileSync(path.join(__dirname, 'schema.graphql'), 'utf8')
 
@@ -19,6 +21,16 @@ const resolvers: Resolvers = {
         throw new GraphQLError(err.message)
       }) as Promise<User>)
     }
+  },
+  transactions: async (_, { id }) => {
+    return await (TransactionDbService.fetch(id).catch((err: Error) => {
+      throw new GraphQLError(err.message)
+    }) as Promise<Transaction>)
+  },
+  taxableEvents: async (_, { id }) => {
+    return await (TaxableEventsDbService.fetch(id).catch((err: Error) => {
+      throw new GraphQLError(err.message)
+    }) as Promise<Transaction>)
   },
   Mutation: {
     registerUser: async (_, { input }) => {

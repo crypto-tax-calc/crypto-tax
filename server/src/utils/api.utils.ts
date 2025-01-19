@@ -14,7 +14,7 @@ export const requireAuthenticated = async (accessTokenWithPrefix?: string, userI
   const accessToken = accessTokenWithPrefix.replace('Bearer ', '')
 
   const decodedToken = await AuthenticationUtils.verifyAndDecodeAccessToken(accessToken).catch((err) => {
-    logger.error(err)
+    logger.error(err.message)
     throw new GraphQLError('Not authenticated', { extensions: { code: 401 } })
   })
 
